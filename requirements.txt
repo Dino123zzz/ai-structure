@@ -1,0 +1,8 @@
+fastapi==0.115.0
+uvicorn==0.30.6
+requests==2.32.3
+numpy==1.26.4
+opencv-python-headless==4.10.0.84
+aiofiles==24.1.0
+python-multipart==0.0.12
+pymysql==1.1.1
