@@ -1,1 +1,520 @@
-temporary
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI结构草图力学验算系统</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f5f7fa;
+            min-height: 100vh;
+        }
+
+        /* 顶部导航 */
+        .navbar {
+            background-color: #1a365d;
+            color: white;
+            padding: 18px 20px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 500;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 24px auto;
+            padding: 0 20px;
+        }
+
+        /* 卡片通用样式 */
+        .card {
+            background-color: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 16px;
+            position: relative;
+        }
+
+        .blue-bar {
+            width: 4px;
+            height: 20px;
+            background-color: #3182ce;
+            border-radius: 2px;
+            margin-right: 10px;
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #2d3748;
+            flex: 1;
+        }
+
+        .close-btn {
+            font-size: 24px;
+            color: #718096;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 4px;
+        }
+        .close-btn:hover {
+            color: #2d3748;
+        }
+
+        /* tips内容区 */
+        .tip-content {
+            background-color: #ebf8ff;
+            border-radius: 6px;
+            padding: 16px;
+            display: flex;
+        }
+        .tip-content .blue-bar {
+            height: auto;
+            align-self: stretch;
+            margin-right: 12px;
+            flex-shrink: 0;
+        }
+        .tip-text {
+            color: #2c5282;
+            line-height: 1.7;
+            font-size: 15px;
+        }
+        .tip-text p {
+            margin-bottom: 8px;
+        }
+        .tip-text p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* 上传区域 */
+        .upload-area {
+            border: 2px dashed #cbd5e0;
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 20px;
+        }
+        .upload-area:hover {
+            border-color: #38a169;
+            background-color: #f0fff4;
+        }
+        .upload-area.dragover {
+            border-color: #38a169;
+            background-color: #f0fff4;
+        }
+        .upload-tip {
+            color: #4a5568;
+            font-size: 16px;
+        }
+        .upload-tip .green {
+            color: #38a169;
+            font-weight: 500;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .preview-img {
+            max-width: 100%;
+            max-height: 300px;
+            border-radius: 8px;
+            margin: 0 auto 16px;
+            display: none;
+            border: 1px solid #e2e8f0;
+        }
+
+        .config-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .config-row label {
+            color: #4a5568;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .config-row input {
+            flex: 1;
+            min-width: 200px;
+            padding: 8px 12px;
+            border: 1px solid #cbd5e0;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 17px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .btn-green {
+            background-color: #38a169;
+            color: white;
+        }
+        .btn-green:hover {
+            background-color: #2f855a;
+        }
+        .btn-green:disabled {
+            background-color: #9ae6b4;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            text-align: center;
+            color: #4a5568;
+            padding: 20px;
+            display: none;
+        }
+        .loading.active {
+            display: block;
+        }
+        .spinner {
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #3182ce;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-msg {
+            background-color: #fff5f5;
+            color: #c53030;
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin-top: 12px;
+            display: none;
+            line-height: 1.6;
+        }
+        .error-msg.active {
+            display: block;
+        }
+
+        /* 结果区域 */
+        .result-section {
+            display: none;
+        }
+        .result-section.active {
+            display: block;
+        }
+        .result-block {
+            margin-bottom: 20px;
+        }
+        .result-block:last-child {
+            margin-bottom: 0;
+        }
+        .result-block h3 {
+            font-size: 17px;
+            color: #2b6cb0;
+            margin-bottom: 12px;
+            padding-left: 8px;
+            border-left: 3px solid #3182ce;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #edf2f7;
+            font-size: 15px;
+        }
+        .result-item:last-child {
+            border-bottom: none;
+        }
+        .result-item .label {
+            color: #4a5568;
+        }
+        .result-item .value {
+            color: #2d3748;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="navbar">AI结构草图力学验算系统</div>
+
+    <div class="container">
+        <!-- 系统介绍tips -->
+        <div class="card" id="systemTip">
+            <div class="card-header">
+                <div class="blue-bar"></div>
+                <div class="card-title">tips</div>
+                <div class="close-btn" onclick="closeCard('systemTip')">×</div>
+            </div>
+            <div class="tip-content">
+                <div class="blue-bar"></div>
+                <div class="tip-text">
+                    该系统针对建筑结构初步设计中手绘草图无法直接参与力学分析的痛点，融合生成式AI图像识别与结构力学理论，实现手绘构件参数自动提取、力学模型自动构建与内力初步验算，弥补传统结构软件无法适配非标准化手绘场景的短板，提升方案构思阶段的设计效率。
+                </div>
+            </div>
+        </div>
+
+        <!-- 拍摄建议tips -->
+        <div class="card" id="shootTip">
+            <div class="card-header">
+                <div class="blue-bar"></div>
+                <div class="card-title">拍摄建议（进一步提高准确率）</div>
+                <div class="close-btn" onclick="closeCard('shootTip')">×</div>
+            </div>
+            <div class="tip-content">
+                <div class="blue-bar"></div>
+                <div class="tip-text">
+                    <p>1. 白纸黑线，光线均匀，尽量避免阴影和褶皱。</p>
+                    <p>2. 手机正对图纸拍摄，不要倾斜，保证杆件横平竖直。</p>
+                    <p>3. 尺寸、荷载数字写清晰，支座符号完整，减少多余草稿线条。</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 上传计算卡片 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="blue-bar"></div>
+                <div class="card-title">智能转换验算演示</div>
+            </div>
+
+            <!-- 后端地址配置 -->
+            <div class="config-row">
+                <label>后端接口地址：</label>
+                <input type="text" id="apiBase" value="http://127.0.0.1:59373" placeholder="http://服务器IP:端口">
+            </div>
+
+            <img class="preview-img" id="preview" alt="草图预览">
+
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-tip">
+                    <span class="green">点击选择</span> 或拖拽手绘结构草图到此处
+                </div>
+                <input type="file" id="fileInput" accept="image/*">
+            </div>
+
+            <button class="action-btn btn-green" id="submitBtn" disabled>执行AI识别 + 力学验算</button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div>AI识别与计算中，请稍候...</div>
+            </div>
+
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <!-- 结果卡片 -->
+        <div class="card result-section" id="resultCard">
+            <div class="card-header">
+                <div class="blue-bar"></div>
+                <div class="card-title">验算结果</div>
+            </div>
+
+            <div class="result-block">
+                <h3>识别参数</h3>
+                <div class="result-item">
+                    <span class="label">构件类型</span>
+                    <span class="value" id="r_type">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">支座形式</span>
+                    <span class="value" id="r_support">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">荷载类型</span>
+                    <span class="value" id="r_loadtype">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">跨度 L</span>
+                    <span class="value" id="r_L">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">均布荷载 q</span>
+                    <span class="value" id="r_q">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">集中力 P</span>
+                    <span class="value" id="r_P">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">力偶 M</span>
+                    <span class="value" id="r_M">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">识别置信度</span>
+                    <span class="value" id="r_conf">-</span>
+                </div>
+            </div>
+
+            <div class="result-block">
+                <h3>力学验算结果</h3>
+                <div class="result-item">
+                    <span class="label">支座反力 R</span>
+                    <span class="value" id="r_R">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">最大弯矩 Mmax</span>
+                    <span class="value" id="r_Mmax">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">最大剪力 Vmax</span>
+                    <span class="value" id="r_Vmax">-</span>
+                </div>
+                <div class="result-item">
+                    <span class="label">与人工计算相对误差</span>
+                    <span class="value" id="r_error">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+
+        // 关闭卡片
+        function closeCard(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const submitBtn = document.getElementById('submitBtn');
+        const loading = document.getElementById('loading');
+        const errorMsg = document.getElementById('errorMsg');
+        const resultCard = document.getElementById('resultCard');
+
+        // 点击上传
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        // 拖拽事件
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length > 0) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+
+        // 选择文件
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showError('请选择图片文件');
+                return;
+            }
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                preview.src = e.target.result;
+                preview.style.display = 'block';
+                submitBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+            hideError();
+            resultCard.classList.remove('active');
+        }
+
+        function showError(text) {
+            errorMsg.textContent = text;
+            errorMsg.classList.add('active');
+        }
+        function hideError() {
+            errorMsg.classList.remove('active');
+        }
+
+        // 提交请求
+        submitBtn.addEventListener('click', async () => {
+            if (!selectedFile) {
+                showError('请先选择草图');
+                return;
+            }
+
+            const baseUrl = document.getElementById('apiBase').value.trim().replace(/\/$/, '');
+            if (!baseUrl) {
+                showError('请填写后端接口地址');
+                return;
+            }
+
+            loading.classList.add('active');
+            hideError();
+            submitBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('sketch_image', selectedFile);
+
+            try {
+                const resp = await fetch(baseUrl + '/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await resp.json();
+
+                if (data.code !== 200) {
+                    throw new Error(data.msg || '后端返回错误');
+                }
+
+                renderResult(data.data);
+            } catch (e) {
+                showError('请求失败：' + e.message + '，请确认后端已启动、地址正确、网络连通');
+            } finally {
+                loading.classList.remove('active');
+                submitBtn.disabled = false;
+            }
+        });
+
+        function renderResult(data) {
+            document.getElementById('r_type').textContent = data.component_type || '-';
+            document.getElementById('r_support').textContent = data.support_type || '-';
+            document.getElementById('r_loadtype').textContent = data.load_type || '-';
+            document.getElementById('r_L').textContent = data.L + ' m';
+            document.getElementById('r_q').textContent = data.q + ' kN/m';
+            document.getElementById('r_P').textContent = data.P + ' kN';
+            document.getElementById('r_M').textContent = data.M + ' kN·m';
+            document.getElementById('r_conf').textContent = data.confidence + ' %';
+
+            document.getElementById('r_R').textContent = data.R + ' kN';
+            document.getElementById('r_Mmax').textContent = data.Mmax + ' kN·m';
+            document.getElementById('r_Vmax').textContent = data.Vmax + ' kN';
+            document.getElementById('r_error').textContent = data.relative_error + ' %';
+
+            resultCard.classList.add('active');
+            resultCard.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
